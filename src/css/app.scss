@@ -1,0 +1,24 @@
+// app global css
+body {
+  font-family: 'Lora', serif;
+}
+
+.font-cinzel {
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
+}
+
+.font-lora {
+  font-family: 'Lora', serif;
+}
+
+// Estilizar tabelas e cards com bordas mais temáticas
+.q-table__card {
+  border: 1px solid rgba(203, 161, 53, 0.3) !important;
+  background-color: #1A1A1A !important;
+}
+
+.westeros-border {
+  border: 1px solid #CBA135;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
