@@ -40,7 +40,7 @@
         <q-tr
           :props="props"
           :style="{
-            background: `linear-gradient(90deg, ${props.row.Cor}15 0%, ${props.row.Cor2 || props.row.Cor}15 100%)`,
+            background: `linear-gradient(90deg, ${withAlpha(props.row.Cor, 0.14)} 0%, ${withAlpha(props.row.Cor2 || props.row.Cor, 0.22)} 100%)`,
           }"
           @click="abrirCasa(props.row)"
           class="cursor-pointer"
@@ -201,6 +201,7 @@ import { readItems, createItem, updateItem, deleteItem, uploadFiles } from '@dir
 import type { CasaWesteros } from '../types/westeros';
 import { client, getBrasaoUrl } from '../services/directus';
 import { staticHouses } from '../data/houses';
+import { withAlpha } from '../utils/color';
 
 // 2. Router
 const router = useRouter();

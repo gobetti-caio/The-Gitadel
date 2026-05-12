@@ -4,7 +4,7 @@
     :style="
       house
         ? {
-            background: `linear-gradient(135deg, ${house.Cor}22 0%, ${house.Cor2 || house.Cor}22 100%), #121212`,
+            background: `linear-gradient(135deg, ${withAlpha(house.Cor, 0.22)} 0%, ${withAlpha(house.Cor2 || house.Cor, 0.28)} 100%), #121212`,
           }
         : {}
     "
@@ -54,7 +54,11 @@
           >
             Região: {{ house.Regiao }}
           </div>
-          <div v-if="house.Categoria === 'Casa Vassala' && house.Suserano" class="font-lora text-subtitle2 q-mt-xs" style="letter-spacing: 1px; color:#EE4B2B;">
+          <div
+            v-if="house.Categoria === 'Casa Vassala' && house.Suserano"
+            class="font-lora text-subtitle2 q-mt-xs"
+            style="letter-spacing: 1px; color: #ee4b2b"
+          >
             <q-icon name="swords" class="q-mr-xs" /> Juramentada à casa {{ house.Suserano }}
           </div>
           <div class="font-lora text-h6 text-italic q-mt-sm text-grey-4" v-if="house.Lema">
@@ -88,7 +92,11 @@
                 <q-card flat class="full-height westeros-border bg-dark-page font-lora">
                   <q-card-section class="row items-center no-wrap">
                     <q-avatar size="60px" class="q-mr-md shadow-1">
-                      <img v-if="char.Icone" :src="getPersonagemIconUrl(char.Icone)" />
+                      <img
+                        v-if="char.Icone"
+                        :src="getPersonagemIconUrl(char.Icone)"
+                        class="avatar-img"
+                      />
                       <q-icon v-else name="person" color="grey-6" size="xl" />
                     </q-avatar>
 
@@ -99,10 +107,7 @@
                       <div class="text-caption text-grey-5" v-if="char.Alcunha">
                         {{ char.Alcunha }}
                       </div>
-                      <q-badge
-                        class="q-mt-xs"
-                        :color="char.Status === 'Vivo' ? 'positive' : 'negative'"
-                      >
+                      <q-badge class="q-mt-xs" :color="statusColor(char.Status)">
                         {{ char.Status || 'Desconhecido' }}
                       </q-badge>
                     </div>
@@ -158,7 +163,7 @@
 
               <q-select
                 v-model="newCharacter.Status"
-                :options="['Vivo', 'Morto', 'Desconhecido']"
+                :options="['Vivo', 'Viva', 'Morto', 'Morta', 'Desconhecido']"
                 label="Status"
                 filled
               />
@@ -195,17 +200,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import {
-  readItem,
-  readItems,
-  createItem,
-  deleteItem,
-  uploadFiles,
-} from '@directus/sdk';
+import { readItem, readItems, createItem, deleteItem, uploadFiles } from '@directus/sdk';
 import type { CasaWesteros, Personagem } from '../types/westeros';
 import { client, getBrasaoUrl, getPersonagemIconUrl } from '../services/directus';
 import { staticHouses } from '../data/houses';
 import { staticCharacters } from '../data/characters';
+import { withAlpha } from '../utils/color';
 const route = useRoute();
 const router = useRouter();
 
@@ -219,19 +219,31 @@ const house = ref<CasaWesteros | null>(null);
 // Lógica para detectar se alguma das cores é muito escura
 const isDarkColor = (color: string | undefined): boolean => {
   if (!color) return false;
-  const hex = color.replace('#', '');
-  if (hex.length !== 6 && hex.length !== 3) return false;
+  const trimmed = color.trim();
+  if (!trimmed.startsWith('#')) return false;
 
-  let r, g, b;
-  if (hex.length === 3) {
-    r = parseInt(hex.substring(0, 1).repeat(2), 16);
-    g = parseInt(hex.substring(1, 2).repeat(2), 16);
-    b = parseInt(hex.substring(2, 3).repeat(2), 16);
-  } else {
-    r = parseInt(hex.substring(0, 2), 16);
-    g = parseInt(hex.substring(2, 4), 16);
-    b = parseInt(hex.substring(4, 6), 16);
-  }
+  const hex = trimmed.replace('#', '');
+  if (hex.length !== 8 && hex.length !== 6 && hex.length !== 4 && hex.length !== 3) return false;
+
+  const expand = (s: string) =>
+    s
+      .split('')
+      .map((ch) => ch + ch)
+      .join('');
+
+  const rgbHex =
+    hex.length === 8
+      ? hex.slice(0, 6)
+      : hex.length === 4
+        ? expand(hex.slice(0, 3))
+        : hex.length === 3
+          ? expand(hex)
+          : hex;
+
+  const r = parseInt(rgbHex.substring(0, 2), 16);
+  const g = parseInt(rgbHex.substring(2, 4), 16);
+  const b = parseInt(rgbHex.substring(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return false;
 
   // Calcula a luminância (0 a 255)
   const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -242,6 +254,13 @@ const needsStroke = computed(() => {
   if (!house.value) return false;
   return isDarkColor(house.value.Cor) || isDarkColor(house.value.Cor2);
 });
+
+const statusColor = (status: Personagem['Status'] | undefined) => {
+  if (!status || status === 'Desconhecido') return 'grey-7';
+  if (status === 'Vivo' || status === 'Viva') return 'positive';
+  if (status === 'Morto' || status === 'Morta') return 'negative';
+  return 'grey-7';
+};
 const characters = ref<Personagem[]>([]);
 
 // Estados Modal Add Personagem
@@ -365,5 +384,12 @@ onMounted(loadData);
 <style scoped>
 .line-height-tight {
   line-height: 1.2;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 </style>

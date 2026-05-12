@@ -15,7 +15,7 @@ export interface Personagem {
   id?: string | number;
   Nome: string;
   Alcunha?: string;
-  Status?: 'Vivo' | 'Morto' | 'Desconhecido';
+  Status?: 'Vivo' | 'Viva' | 'Morto' | 'Morta' | 'Desconhecido';
   Icone?: string;
   Importancia?: 'Protagonistas' | 'Membros Notaveis' | 'Demais Membros';
   Casa_ID?: string | number;
