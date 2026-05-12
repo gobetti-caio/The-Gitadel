@@ -85,7 +85,12 @@
       <div v-if="characters.length > 0">
         <div v-for="group in characterGroups" :key="group.title">
           <div v-if="group.list.length > 0">
-            <div :class="['font-cinzel text-h6 q-mb-md', group.colorClass]">{{ group.title }}</div>
+            <div class="q-mt-lg q-mb-md">
+              <q-separator class="q-mb-md" color="grey-8" />
+              <div :class="['font-cinzel text-h6 text-weight-bold', group.colorClass]">
+                {{ group.title }}
+              </div>
+            </div>
 
             <div class="row q-col-gutter-md q-mb-xl">
               <div class="col-12 col-sm-6 col-md-4" v-for="char in group.list" :key="char.id">
@@ -119,13 +124,13 @@
                     style="border-top: 1px solid rgba(203, 161, 53, 0.2)"
                   >
                     <q-btn
-                      flat
                       color="negative"
+                      unelevated
                       icon="delete"
                       label="Excluir"
                       @click="char.id && deleteCharacter(char.id)"
                       size="sm"
-                      class="font-cinzel"
+                      class="font-cinzel text-weight-bold"
                     />
                   </q-card-actions>
                 </q-card>
@@ -278,7 +283,7 @@ const newCharacter = reactive({
 const characterGroups = computed(() => [
   {
     title: 'Protagonistas',
-    colorClass: 'text-secondary',
+    colorClass: 'text-warning',
     list: characters.value.filter((c) => c.Importancia === 'Protagonistas'),
   },
   {
@@ -288,7 +293,7 @@ const characterGroups = computed(() => [
   },
   {
     title: 'Demais Membros',
-    colorClass: 'text-grey-5',
+    colorClass: 'text-grey-4',
     list: characters.value.filter((c) => !c.Importancia || c.Importancia === 'Demais Membros'),
   },
 ]);
