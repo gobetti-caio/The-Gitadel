@@ -1,0 +1,160 @@
+import type { CasaWesteros } from '../types/westeros';
+
+/**
+ * Dados estáticos das Casas de Westeros.
+ * Esses dados são exibidos quando o Directus não está disponível.
+ *
+ * Para o campo Brasao: use o nome do arquivo em public/brasoes/ (ex: 'Stark.png')
+ * Para o campo Icone: use o nome de um Material Icon (ex: 'shield', 'castle', 'flag')
+ * Cores: use formato hexadecimal (ex: '#59626b')
+ */
+export const staticHouses: CasaWesteros[] = [
+  // ============ GRANDES CASAS ============
+  {
+    id: 1,
+    Nome: 'Stark',
+    Lema: 'O Inverno Está Chegando',
+    Regiao: 'O Norte',
+    Cor: '#59626b',
+    Cor2: '#303030ff',
+    Icone: 'shield',
+    Brasao: 'Stark.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 2,
+    Nome: 'Lannister',
+    Lema: 'Ouçam-me Rugir',
+    Regiao: 'Terras Ocidentais',
+    Cor: '#db1414',
+    Cor2: '#f5bc00fd',
+    Icone: 'shield',
+    Brasao: 'Lannister.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 3,
+    Nome: 'Targaryen',
+    Lema: 'Fogo e Sangue',
+    Regiao: 'Pedra do Dragão',
+    Cor: '#000000',
+    Cor2: '#ff0000ff',
+    Icone: 'shield',
+    Brasao: 'Targaryen.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 4,
+    Nome: 'Baratheon',
+    Lema: 'Nossa Fúria',
+    Regiao: 'Terras da Tempestade',
+    Cor: '#000000ff',
+    Cor2: '#ffc401fd',
+    Icone: 'shield',
+    Brasao: 'Baratheon.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 5,
+    Nome: 'Greyjoy',
+    Lema: 'Nós Não Semeamos',
+    Regiao: 'Ilhas de Ferro',
+    Cor: '#000000',
+    Cor2: '#ffa600ff',
+    Icone: 'shield',
+    Brasao: 'Greyjoy.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 6,
+    Nome: 'Arryn',
+    Lema: 'Tão Alto Quanto a Honra',
+    Regiao: 'Vale de Arryn',
+    Cor: '#00a2ffff',
+    Cor2: '#ffffffff',
+    Icone: 'shield',
+    Brasao: 'Arryn.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 7,
+    Nome: 'Martell',
+    Lema: 'Inssubimissos, Não Curvados, Não Quebrados',
+    Regiao: 'Dorne',
+    Cor: '#ff0000ff',
+    Cor2: '#f55a00ff',
+    Icone: 'shield',
+    Brasao: 'Martell.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 8,
+    Nome: 'Tully',
+    Lema: 'Famíl  ia, Dever, Honra',
+    Regiao: 'Terras Fluviais',
+    Cor: '#0400faff',
+    Cor2: '#f50000ff',
+    Icone: 'shield',
+    Brasao: 'Tully.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+  {
+    id: 9,
+    Nome: 'Tyrell',
+    Lema: 'Crescendo Fortes',
+    Regiao: 'Campina',
+    Cor: '#197a38ff',
+    Cor2: '#d1be36ff',
+    Icone: 'shield',
+    Brasao: 'Tyrell.png',
+    Categoria: 'Grande Casa',
+    Suserano: '',
+  },
+
+  // ============ CASAS VASSALAS ============
+  {
+    id: 10,
+    Nome: 'Seaworth',
+    Lema: '(sem tema oficial)',
+    Regiao: 'Terras da Tempestade',
+    Cor: '#000000ff',
+    Cor2: '#5a5a5afd',
+    Icone: 'shield',
+    Brasao: 'Seaworth.png',
+    Categoria: 'Casa Vassala',
+    Suserano: 'Baratheon',
+  },
+  {
+    id: 11,
+    Nome: 'Manderly',
+    Lema: '(lema ainda não mencionado)',
+    Regiao: 'O Norte (Politicamente), Campina (Geograficamente)',
+    Cor: '#00ffc8ff',
+    Cor2: '#ffffffff',
+    Icone: 'shield',
+    Brasao: 'Manderly.png',
+    Categoria: 'Casa Vassala',
+    Suserano: 'Stark',
+  },
+  // Adicione mais casas abaixo seguindo o mesmo formato:
+  // {
+  //   id: 12,
+  //   Nome: '',
+  //   Lema: '',
+  //   Regiao: '',
+  //   Cor: '#000000',
+  //   Cor2: '',
+  //   Icone: 'shield',
+  //   Brasao: '',           // arquivo em public/brasoes/
+  //   Categoria: 'Grande Casa',  // ou 'Casa Vassala'
+  //   Suserano: '',         // se Casa Vassala, nome da Grande Casa
+  // },
+];

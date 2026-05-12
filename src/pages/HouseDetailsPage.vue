@@ -1,5 +1,15 @@
 <template>
-  <q-page padding>
+  <q-page
+    padding
+    :style="
+      house
+        ? {
+            background: `linear-gradient(135deg, ${house.Cor}22 0%, ${house.Cor2 || house.Cor}22 100%), #121212`,
+          }
+        : {}
+    "
+    style="min-height: 100vh"
+  >
     <div v-if="loading" class="flex flex-center q-pa-xl">
       <q-spinner color="primary" size="3em" />
     </div>
@@ -10,14 +20,46 @@
         <q-btn flat round icon="arrow_back" color="primary" @click="router.push('/')" />
 
         <q-avatar square v-if="house.Brasao" size="100px" class="q-mr-md shadow-2">
-          <img :src="`http://localhost:8056/assets/${house.Brasao}`" />
+          <img :src="getBrasaoUrl(house.Brasao)" />
         </q-avatar>
-        <q-icon v-else name="shield" :style="{ color: house.Cor || '#1976D2' }" size="100px" class="q-mr-md" />
+        <q-icon
+          v-else
+          :name="house.Icone || 'shield'"
+          :style="{
+            background: `linear-gradient(135deg, ${house.Cor}, ${house.Cor2 || house.Cor})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 0 4px rgba(255,255,255,0.2))',
+          }"
+          size="100px"
+          class="q-mr-md"
+        />
 
         <div>
-          <div class="font-cinzel text-h3 text-weight-bold" :style="{ color: house.Cor || '#CBA135' }">{{ house.Nome }}</div>
-          <div class="font-lora text-subtitle1 text-grey-5" style="letter-spacing: 2px; text-transform: uppercase;">Região: {{ house.Regiao }}</div>
-          <div class="font-lora text-h6 text-italic q-mt-sm text-grey-4" v-if="house.Lema">"{{ house.Lema }}"</div>
+          <div
+            class="font-cinzel text-h3 text-weight-bold"
+            :style="{
+              background: `linear-gradient(-45deg, ${house.Cor || '#CBA135'}, ${house.Cor2 || house.Cor || '#CBA135'})`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              WebkitTextStroke: needsStroke ? '1px rgba(255,255,255,0.6)' : 'none',
+              filter: 'drop-shadow(-1px 1px 8px rgba(255,255,255,0.7))',
+            }"
+          >
+            {{ house.Nome }}
+          </div>
+          <div
+            class="font-lora text-subtitle1 text-grey-5"
+            style="letter-spacing: 2px; text-transform: uppercase"
+          >
+            Região: {{ house.Regiao }}
+          </div>
+          <div v-if="house.Categoria === 'Casa Vassala' && house.Suserano" class="font-lora text-subtitle2 q-mt-xs" style="letter-spacing: 1px; color:#EE4B2B;">
+            <q-icon name="swords" class="q-mr-xs" /> Juramentada à casa {{ house.Suserano }}
+          </div>
+          <div class="font-lora text-h6 text-italic q-mt-sm text-grey-4" v-if="house.Lema">
+            "{{ house.Lema }}"
+          </div>
         </div>
       </div>
 
@@ -26,7 +68,14 @@
       <!-- Sessão de Personagens -->
       <div class="row items-center justify-between q-mb-md">
         <div class="font-cinzel text-h5 text-primary">Membros da Casa</div>
-        <q-btn label="Adicionar Membro" icon="add" color="primary" outline class="font-cinzel text-weight-bold" @click="showAddCharacterDialog = true" />
+        <q-btn
+          label="Adicionar Membro"
+          icon="add"
+          color="primary"
+          outline
+          class="font-cinzel text-weight-bold"
+          @click="showAddCharacterDialog = true"
+        />
       </div>
 
       <div v-if="characters.length > 0">
@@ -39,21 +88,40 @@
                 <q-card flat class="full-height westeros-border bg-dark-page font-lora">
                   <q-card-section class="row items-center no-wrap">
                     <q-avatar size="60px" class="q-mr-md shadow-1">
-                      <img v-if="char.Icone" :src="`http://localhost:8056/assets/${char.Icone}`" />
+                      <img v-if="char.Icone" :src="getPersonagemIconUrl(char.Icone)" />
                       <q-icon v-else name="person" color="grey-6" size="xl" />
                     </q-avatar>
 
                     <div class="col">
-                      <div class="font-cinzel text-h6 line-height-tight text-white">{{ char.Nome }}</div>
-                      <div class="text-caption text-grey-5" v-if="char.Alcunha">{{ char.Alcunha }}</div>
-                      <q-badge class="q-mt-xs" :color="char.Status === 'Vivo' ? 'positive' : 'negative'">
+                      <div class="font-cinzel text-h6 line-height-tight text-white">
+                        {{ char.Nome }}
+                      </div>
+                      <div class="text-caption text-grey-5" v-if="char.Alcunha">
+                        {{ char.Alcunha }}
+                      </div>
+                      <q-badge
+                        class="q-mt-xs"
+                        :color="char.Status === 'Vivo' ? 'positive' : 'negative'"
+                      >
                         {{ char.Status || 'Desconhecido' }}
                       </q-badge>
                     </div>
                   </q-card-section>
 
-                  <q-card-actions align="right" class="bg-dark q-px-md" style="border-top: 1px solid rgba(203, 161, 53, 0.2);">
-                    <q-btn flat color="negative" icon="delete" label="Excluir" @click="deleteCharacter(char.id)" size="sm" class="font-cinzel" />
+                  <q-card-actions
+                    align="right"
+                    class="bg-dark q-px-md"
+                    style="border-top: 1px solid rgba(203, 161, 53, 0.2)"
+                  >
+                    <q-btn
+                      flat
+                      color="negative"
+                      icon="delete"
+                      label="Excluir"
+                      @click="char.id && deleteCharacter(char.id)"
+                      size="sm"
+                      class="font-cinzel"
+                    />
                   </q-card-actions>
                 </q-card>
               </div>
@@ -108,7 +176,13 @@
 
               <div class="row justify-end q-mt-md">
                 <q-btn label="Cancelar" color="primary" flat v-close-popup class="font-cinzel" />
-                <q-btn label="Salvar" type="submit" color="primary" :loading="sendingCharacter" class="font-cinzel text-weight-bold" />
+                <q-btn
+                  label="Salvar"
+                  type="submit"
+                  color="primary"
+                  :loading="sendingCharacter"
+                  class="font-cinzel text-weight-bold"
+                />
               </div>
             </q-form>
           </q-card-section>
@@ -122,36 +196,16 @@
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
-  createDirectus,
-  rest,
   readItem,
   readItems,
   createItem,
   deleteItem,
   uploadFiles,
 } from '@directus/sdk';
-
-// Interfaces
-interface CasaWesteros {
-  id: string | number;
-  ID?: string | number;
-  Nome: string;
-  Regiao: string;
-  Lema: string;
-  Cor?: string;
-  Brasao?: string;
-}
-
-interface Personagem {
-  id: string | number;
-  Nome: string;
-  Alcunha?: string;
-  Status?: string;
-  Icone?: string;
-  Importancia?: string;
-}
-
-const client = createDirectus('http://localhost:8056').with(rest());
+import type { CasaWesteros, Personagem } from '../types/westeros';
+import { client, getBrasaoUrl, getPersonagemIconUrl } from '../services/directus';
+import { staticHouses } from '../data/houses';
+import { staticCharacters } from '../data/characters';
 const route = useRoute();
 const router = useRouter();
 
@@ -161,6 +215,33 @@ const houseId = route.params.id as string;
 // Estados Principais
 const loading = ref(true);
 const house = ref<CasaWesteros | null>(null);
+
+// Lógica para detectar se alguma das cores é muito escura
+const isDarkColor = (color: string | undefined): boolean => {
+  if (!color) return false;
+  const hex = color.replace('#', '');
+  if (hex.length !== 6 && hex.length !== 3) return false;
+
+  let r, g, b;
+  if (hex.length === 3) {
+    r = parseInt(hex.substring(0, 1).repeat(2), 16);
+    g = parseInt(hex.substring(1, 2).repeat(2), 16);
+    b = parseInt(hex.substring(2, 3).repeat(2), 16);
+  } else {
+    r = parseInt(hex.substring(0, 2), 16);
+    g = parseInt(hex.substring(2, 4), 16);
+    b = parseInt(hex.substring(4, 6), 16);
+  }
+
+  // Calcula a luminância (0 a 255)
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luma < 50; // Se for menor que 50, é uma cor muito escura (quase preta)
+};
+
+const needsStroke = computed(() => {
+  if (!house.value) return false;
+  return isDarkColor(house.value.Cor) || isDarkColor(house.value.Cor2);
+});
 const characters = ref<Personagem[]>([]);
 
 // Estados Modal Add Personagem
@@ -176,9 +257,21 @@ const newCharacter = reactive({
 
 // Agrupamento de Personagens
 const characterGroups = computed(() => [
-  { title: 'Protagonistas', colorClass: 'text-secondary', list: characters.value.filter(c => c.Importancia === 'Protagonistas') },
-  { title: 'Membros Notáveis', colorClass: 'text-primary', list: characters.value.filter(c => c.Importancia === 'Membros Notaveis') },
-  { title: 'Demais Membros', colorClass: 'text-grey-5', list: characters.value.filter(c => !c.Importancia || c.Importancia === 'Demais Membros') }
+  {
+    title: 'Protagonistas',
+    colorClass: 'text-secondary',
+    list: characters.value.filter((c) => c.Importancia === 'Protagonistas'),
+  },
+  {
+    title: 'Membros Notáveis',
+    colorClass: 'text-primary',
+    list: characters.value.filter((c) => c.Importancia === 'Membros Notaveis'),
+  },
+  {
+    title: 'Demais Membros',
+    colorClass: 'text-grey-5',
+    list: characters.value.filter((c) => !c.Importancia || c.Importancia === 'Demais Membros'),
+  },
 ]);
 
 // Funções de Busca
@@ -187,7 +280,9 @@ const fetchHouseDetails = async () => {
     const response = await client.request(readItem('Casas_Westeros', houseId));
     house.value = response as CasaWesteros;
   } catch (error) {
-    console.error('Erro ao buscar casa:', error);
+    console.warn('Directus indisponível para casa, usando dados estáticos:', error);
+    const found = staticHouses.find((h) => String(h.id) === String(houseId));
+    house.value = found || null;
   }
 };
 
@@ -198,11 +293,12 @@ const fetchCharacters = async () => {
         filter: {
           Casa_ID: { _eq: houseId },
         },
-      })
+      }),
     );
     characters.value = response as Personagem[];
   } catch (error) {
-    console.error('Erro ao buscar personagens:', error);
+    console.warn('Directus indisponível para personagens, usando dados estáticos:', error);
+    characters.value = staticCharacters.filter((c) => String(c.Casa_ID) === String(houseId));
   }
 };
 
@@ -235,7 +331,12 @@ const saveCharacter = async () => {
 
     await client.request(createItem('Personagens', dadosParaSalvar));
 
-    Object.assign(newCharacter, { Nome: '', Alcunha: '', Status: 'Vivo', Importancia: 'Demais Membros' });
+    Object.assign(newCharacter, {
+      Nome: '',
+      Alcunha: '',
+      Status: 'Vivo',
+      Importancia: 'Demais Membros',
+    });
     arquivoIconePersonagem.value = null;
     showAddCharacterDialog.value = false;
 
