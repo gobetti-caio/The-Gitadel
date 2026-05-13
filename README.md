@@ -1,60 +1,64 @@
-# Quasar App (c3-po)
+# The Gitadel
 
-A Quasar Project
+A Quasar + Vue app that displays Houses and Characters of Westeros, backed by Directus.
 
-## Install the dependencies
+## Prerequisites
 
-```bash
-yarn
-# or
-npm install
-```
+- Node.js 22.12+ (or 24/26/28)
+- pnpm 10+
+- Directus running at `http://localhost:8056` (default for this repo's Docker compose)
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
+## Install
 
 ```bash
-quasar dev
+pnpm install
 ```
 
-### Lint the files
+## Run the app (development)
 
 ```bash
-yarn lint
-# or
-npm run lint
+pnpm dev
 ```
 
-### Format the files
+The app will open in your browser automatically.
+
+## Run the app (production build)
 
 ```bash
-yarn format
-# or
-npm run format
+pnpm build
 ```
 
-### Build the app for production
+## Lint and format
 
 ```bash
-quasar build
+pnpm lint
+pnpm format
 ```
 
-## Carga inicial no Directus
+## Directus initial seed (recommended)
 
-Para carregar as casas, personagens e arquivos (brasoes/figuras) no Directus:
+This project can run in local-only mode, but for full functionality you should seed the
+Directus database with the initial data (houses, characters, and images).
 
-1. No Directus, gere um Access Token do seu usuario.
-2. No terminal, rode o seed com o token:
+1. In Directus, generate an Access Token for your user.
+2. Run the seed script from the project root:
 
 ```bash
-DIRECTUS_URL=http://localhost:8056 DIRECTUS_TOKEN=SEU_TOKEN pnpm seed:all
+DIRECTUS_URL=http://localhost:8056 DIRECTUS_TOKEN=YOUR_TOKEN pnpm seed:all
 ```
 
-Notas:
+Notes:
 
-- O script faz upsert por nome (cria ou atualiza).
-- Ele usa os arquivos locais em public/brasoes e public/personagens.
-- Nao cole tokens em chats; use somente no terminal.
+- The script performs upserts by name (creates or updates).
+- It uploads local images from `public/brasoes` and `public/personagens`.
+- Do not share tokens in chats; use them only in your terminal.
 
-### Customize the configuration
+## Directus URL
 
-See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
+If your Directus is running on a different URL, set `DIRECTUS_URL` when running the app
+or the seed script. The provided `docker-compose.yml` maps `8056:8055`, so the default
+URL is `http://localhost:8056`. Example:
+
+```bash
+DIRECTUS_URL=https://your-directus.example pnpm dev
+```
