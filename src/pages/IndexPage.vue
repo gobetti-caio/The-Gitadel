@@ -1,5 +1,19 @@
 <template>
   <q-page padding class="q-pa-xl">
+    <!-- Banner de modo -->
+    <q-banner
+      v-if="dataSource === 'local'"
+      class="bg-warning text-dark q-mb-md font-lora"
+      rounded
+      dense
+    >
+      <template v-slot:avatar>
+        <q-icon name="cloud_off" color="dark" />
+      </template>
+      <strong>Modo Local</strong> — Directus indisponível. Alterações são temporárias e serão
+      perdidas ao recarregar.
+    </q-banner>
+
     <div class="row items-center justify-between q-mb-lg">
       <div class="font-cinzel text-h5 text-primary">Grandes e Pequenas Casas</div>
       <q-btn
@@ -29,7 +43,7 @@
       :rows="filteredHouses"
       :columns="columns"
       :filter="filter"
-      row-key="Nome"
+      row-key="id"
       :loading="loading"
       v-model:pagination="initialPagination"
       flat
@@ -40,7 +54,7 @@
         <q-tr
           :props="props"
           :style="{
-            background: `linear-gradient(90deg, ${withAlpha(props.row.Cor, 0.14)} 0%, ${withAlpha(props.row.Cor2 || props.row.Cor, 0.22)} 100%)`,
+            background: `linear-gradient(90deg, ${withAlpha(props.row.Cor, 0.34)} 0%, ${withAlpha(props.row.Cor2 || props.row.Cor, 0.54)} 100%)`,
           }"
           @click="abrirCasa(props.row)"
           class="cursor-pointer"
@@ -85,7 +99,7 @@
                     <q-item-section>Editar Casa</q-item-section>
                   </q-item>
                   <q-separator />
-                  <q-item clickable v-close-popup @click="deleteHouse(props.row.id)">
+                  <q-item clickable v-close-popup @click="handleDeleteHouse(props.row.id)">
                     <q-item-section avatar
                       ><q-icon name="delete" color="negative" size="sm"
                     /></q-item-section>
@@ -148,9 +162,13 @@
                   v-model="arquivoBrasao"
                   label="Upload do Brasão"
                   accept=".jpg, image/*"
+                  :disable="!uploadAvailable"
                 >
                   <template v-slot:prepend>
                     <q-icon name="attach_file" />
+                  </template>
+                  <template v-slot:hint v-if="!uploadAvailable">
+                    Upload disponível apenas com Directus ativo
                   </template>
                 </q-file>
               </div>
@@ -196,17 +214,24 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
 import { useRouter } from 'vue-router';
-import type { QTableColumn } from 'quasar';
-import { readItems, createItem, updateItem, deleteItem, uploadFiles } from '@directus/sdk';
+import { useQuasar, type QTableColumn } from 'quasar';
 import type { CasaWesteros } from '../types/westeros';
-import { client, getBrasaoUrl } from '../services/directus';
-import { staticHouses } from '../data/houses';
+import { getBrasaoUrl } from '../services/directus';
+import {
+  dataSource,
+  getHouses,
+  createHouse as svcCreateHouse,
+  updateHouse as svcUpdateHouse,
+  deleteHouse as svcDeleteHouse,
+  isUploadAvailable,
+} from '../services/westerosService';
 import { withAlpha } from '../utils/color';
 
-// 2. Router
+// Router & Quasar
 const router = useRouter();
+const $q = useQuasar();
 
-// 3. Estados
+// Estados
 const arquivoBrasao = ref<File | null>(null);
 const houses = ref<CasaWesteros[]>([]);
 const loading = ref(false);
@@ -216,6 +241,8 @@ const filter = ref('');
 const tab = ref('todas');
 const isEditing = ref(false);
 const editingId = ref<string | number | null>(null);
+
+const uploadAvailable = computed(() => isUploadAvailable());
 
 // Configuração da Paginação da Tabela
 const initialPagination = ref({
@@ -251,11 +278,7 @@ const columns: QTableColumn[] = [
 const fetchHouses = async () => {
   loading.value = true;
   try {
-    const response = await client.request(readItems('Casas_Westeros'));
-    houses.value = response as CasaWesteros[];
-  } catch (error) {
-    console.warn('Directus indisponível, usando dados estáticos:', error);
-    houses.value = staticHouses;
+    houses.value = await getHouses();
   } finally {
     loading.value = false;
   }
@@ -299,68 +322,89 @@ const editHouse = (house: CasaWesteros) => {
 const saveHouse = async () => {
   sending.value = true;
   try {
-    let idDaImagem = null;
-
-    // A. SE o usuário escolheu uma imagem, fazemos o upload primeiro
-    if (arquivoBrasao.value) {
-      const formData = new FormData();
-      formData.append('title', `Brasão - ${newHouse.Nome}`);
-      formData.append('file', arquivoBrasao.value);
-
-      // Envia pro cofre do Directus
-      const uploadResult = await client.request(uploadFiles(formData));
-      idDaImagem = uploadResult.id; // Pega o código da imagem gerado
-    }
-
-    // B. Agora criamos a Casa, juntando os textos e o ID da imagem
-    const dadosParaSalvar: CasaWesteros = {
-      ...newHouse,
-    };
-
-    // Só enviamos o Brasao se uma nova imagem foi feita upload
-    if (idDaImagem) {
-      dadosParaSalvar.Brasao = idDaImagem;
-    }
+    const file = uploadAvailable.value ? arquivoBrasao.value : null;
+    let result;
 
     if (isEditing.value && editingId.value) {
-      await client.request(updateItem('Casas_Westeros', editingId.value, dadosParaSalvar));
+      result = await svcUpdateHouse(editingId.value, { ...newHouse }, file);
     } else {
-      await client.request(createItem('Casas_Westeros', dadosParaSalvar));
+      result = await svcCreateHouse({ ...newHouse }, file);
     }
 
-    // Resetar formulário
-    Object.assign(newHouse, {
-      Nome: '',
-      Categoria: 'Casa Vassala',
-      Regiao: '',
-      Lema: '',
-      Cor: '#CBA135',
-      Cor2: '#000000',
-      Icone: 'shield',
-      Suserano: '',
-    });
-    arquivoBrasao.value = null; // Limpa o campo de arquivo
-    showAddDialog.value = false;
-    isEditing.value = false;
-    editingId.value = null;
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: isEditing.value ? 'Casa atualizada!' : 'Nova casa registrada!',
+        caption:
+          result.source === 'local' ? 'Modo local — alteração temporária' : 'Salvo no Directus',
+        icon: result.source === 'local' ? 'cloud_off' : 'cloud_done',
+      });
 
-    await fetchHouses();
-  } catch (error) {
-    console.error('Erro ao salvar (verifique as permissões de Directus Files!):', error);
+      // Atualização otimista
+      if (result.data) {
+        if (isEditing.value && editingId.value) {
+          const idx = houses.value.findIndex((h) => String(h.id) === String(editingId.value));
+          if (idx !== -1) {
+            houses.value[idx] = { ...houses.value[idx], ...result.data };
+          }
+        } else {
+          houses.value.unshift(result.data); // Adiciona a nova casa no topo da lista
+        }
+      }
+
+      await fetchHouses();
+
+      Object.assign(newHouse, {
+        Nome: '',
+        Categoria: 'Casa Vassala',
+        Regiao: '',
+        Lema: '',
+        Cor: '#CBA135',
+        Cor2: '#000000',
+        Icone: 'shield',
+        Suserano: '',
+      });
+      arquivoBrasao.value = null;
+      showAddDialog.value = false;
+      isEditing.value = false;
+      editingId.value = null;
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: 'Erro ao salvar casa',
+        caption:
+          result.error instanceof Error
+            ? result.error.message
+            : 'Verifique as permissões do Directus',
+        icon: 'error',
+      });
+    }
   } finally {
     sending.value = false;
   }
 };
 
-const deleteHouse = async (id: string | number) => {
-  // Uma confirmação simples antes de apagar
+const handleDeleteHouse = async (id: string | number) => {
   if (confirm('Tem certeza que deseja apagar este registro do Arquivo?')) {
     loading.value = true;
     try {
-      await client.request(deleteItem('Casas_Westeros', id));
-      await fetchHouses(); // Atualiza a lista após apagar
-    } catch (error) {
-      console.error('Erro ao apagar:', error);
+      const result = await svcDeleteHouse(id);
+      if (result.success) {
+        $q.notify({
+          type: 'positive',
+          message: 'Casa removida!',
+          caption:
+            result.source === 'local'
+              ? 'Modo local — alteração temporária'
+              : 'Removido do Directus',
+          icon: result.source === 'local' ? 'cloud_off' : 'cloud_done',
+        });
+        // Atualização otimista: remove da lista imediatamente
+        houses.value = houses.value.filter((h) => String(h.id) !== String(id));
+        await fetchHouses();
+      } else {
+        $q.notify({ type: 'negative', message: 'Erro ao excluir casa', icon: 'error' });
+      }
     } finally {
       loading.value = false;
     }

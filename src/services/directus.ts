@@ -1,8 +1,15 @@
 import { createDirectus, rest } from '@directus/sdk';
 
-const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8056';
+export const DIRECTUS_URL = import.meta.env.VITE_DIRECTUS_URL || 'http://localhost:8056';
 
-export const client = createDirectus(DIRECTUS_URL).with(rest());
+export const client = createDirectus(DIRECTUS_URL).with(
+  rest({
+    onRequest: (options) => {
+      options.cache = 'no-store';
+      return options;
+    },
+  })
+);
 
 export const getAssetUrl = (assetId: string) => `${DIRECTUS_URL}/assets/${assetId}`;
 

@@ -10,6 +10,20 @@
     "
     style="min-height: 100vh"
   >
+    <!-- Banner de modo -->
+    <q-banner
+      v-if="dataSource === 'local'"
+      class="bg-warning text-dark q-mb-md font-lora"
+      rounded
+      dense
+    >
+      <template v-slot:avatar>
+        <q-icon name="cloud_off" color="dark" />
+      </template>
+      <strong>Modo Local</strong> — Directus indisponível. Alterações são temporárias e serão
+      perdidas ao recarregar.
+    </q-banner>
+
     <div v-if="loading" class="flex flex-center q-pa-xl">
       <q-spinner color="primary" size="3em" />
     </div>
@@ -128,7 +142,7 @@
                       unelevated
                       icon="delete"
                       label="Excluir"
-                      @click="char.id && deleteCharacter(char.id)"
+                      @click="char.id && handleDeleteCharacter(char.id)"
                       size="sm"
                       class="font-cinzel text-weight-bold"
                     />
@@ -178,9 +192,13 @@
                 v-model="arquivoIconePersonagem"
                 label="Foto / Ícone"
                 accept=".jpg, .png, image/*"
+                :disable="!uploadAvailable"
               >
                 <template v-slot:prepend>
                   <q-icon name="face" />
+                </template>
+                <template v-slot:hint v-if="!uploadAvailable">
+                  Upload disponível apenas com Directus ativo
                 </template>
               </q-file>
 
@@ -205,14 +223,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { readItem, readItems, createItem, deleteItem, uploadFiles } from '@directus/sdk';
+import { useQuasar } from 'quasar';
 import type { CasaWesteros, Personagem } from '../types/westeros';
-import { client, getBrasaoUrl, getPersonagemIconUrl } from '../services/directus';
-import { staticHouses } from '../data/houses';
-import { staticCharacters } from '../data/characters';
+import { getBrasaoUrl, getPersonagemIconUrl } from '../services/directus';
+import {
+  dataSource,
+  getHouseById,
+  getCharactersByHouse,
+  createCharacter as svcCreateCharacter,
+  deleteCharacter as svcDeleteCharacter,
+  isUploadAvailable,
+} from '../services/westerosService';
 import { withAlpha } from '../utils/color';
+
 const route = useRoute();
 const router = useRouter();
+const $q = useQuasar();
 
 // Pegamos o ID da casa pela URL (ex: /casa/1 -> id = 1)
 const houseId = route.params.id as string;
@@ -220,6 +246,8 @@ const houseId = route.params.id as string;
 // Estados Principais
 const loading = ref(true);
 const house = ref<CasaWesteros | null>(null);
+
+const uploadAvailable = computed(() => isUploadAvailable());
 
 // Lógica para detectar se alguma das cores é muito escura
 const isDarkColor = (color: string | undefined): boolean => {
@@ -272,7 +300,7 @@ const characters = ref<Personagem[]>([]);
 const showAddCharacterDialog = ref(false);
 const sendingCharacter = ref(false);
 const arquivoIconePersonagem = ref<File | null>(null);
-const newCharacter = reactive({
+const newCharacter = reactive<Omit<Personagem, 'id' | 'Icone' | 'Casa_ID'>>({
   Nome: '',
   Alcunha: '',
   Status: 'Vivo',
@@ -300,30 +328,11 @@ const characterGroups = computed(() => [
 
 // Funções de Busca
 const fetchHouseDetails = async () => {
-  try {
-    const response = await client.request(readItem('Casas_Westeros', houseId));
-    house.value = response as CasaWesteros;
-  } catch (error) {
-    console.warn('Directus indisponível para casa, usando dados estáticos:', error);
-    const found = staticHouses.find((h) => String(h.id) === String(houseId));
-    house.value = found || null;
-  }
+  house.value = await getHouseById(houseId);
 };
 
 const fetchCharacters = async () => {
-  try {
-    const response = await client.request(
-      readItems('Personagens', {
-        filter: {
-          Casa_ID: { _eq: houseId },
-        },
-      }),
-    );
-    characters.value = response as Personagem[];
-  } catch (error) {
-    console.warn('Directus indisponível para personagens, usando dados estáticos:', error);
-    characters.value = staticCharacters.filter((c) => String(c.Casa_ID) === String(houseId));
-  }
+  characters.value = await getCharactersByHouse(houseId);
 };
 
 const loadData = async () => {
@@ -336,47 +345,72 @@ const loadData = async () => {
 const saveCharacter = async () => {
   sendingCharacter.value = true;
   try {
-    let idDaImagem = null;
+    const file = uploadAvailable.value ? arquivoIconePersonagem.value : null;
 
-    if (arquivoIconePersonagem.value) {
-      const formData = new FormData();
-      formData.append('title', `Foto - ${newCharacter.Nome}`);
-      formData.append('file', arquivoIconePersonagem.value);
+    const result = await svcCreateCharacter(
+      {
+        ...newCharacter,
+        Casa_ID: houseId,
+      },
+      file,
+    );
 
-      const uploadResult = await client.request(uploadFiles(formData));
-      idDaImagem = uploadResult.id;
+    if (result.success) {
+      $q.notify({
+        type: 'positive',
+        message: 'Personagem registrado!',
+        caption:
+          result.source === 'local'
+            ? 'Modo local — alteração temporária'
+            : 'Salvo no Directus',
+        icon: result.source === 'local' ? 'cloud_off' : 'cloud_done',
+      });
+
+      if (result.data) {
+        characters.value.push(result.data);
+      }
+
+      Object.assign(newCharacter, {
+        Nome: '',
+        Alcunha: '',
+        Status: 'Vivo',
+        Importancia: 'Demais Membros',
+      });
+      arquivoIconePersonagem.value = null;
+      showAddCharacterDialog.value = false;
+    } else {
+      $q.notify({
+        type: 'negative',
+        message: 'Erro ao salvar personagem',
+        caption: result.error instanceof Error ? result.error.message : 'Verifique as permissões',
+        icon: 'error',
+      });
     }
-
-    const dadosParaSalvar = {
-      ...newCharacter,
-      Icone: idDaImagem,
-      Casa_ID: houseId,
-    };
-
-    await client.request(createItem('Personagens', dadosParaSalvar));
-
-    Object.assign(newCharacter, {
-      Nome: '',
-      Alcunha: '',
-      Status: 'Vivo',
-      Importancia: 'Demais Membros',
-    });
-    arquivoIconePersonagem.value = null;
-    showAddCharacterDialog.value = false;
-
-    await fetchCharacters(); // Recarrega a lista
-  } catch (error) {
-    console.error('Erro ao salvar personagem:', error);
   } finally {
     sendingCharacter.value = false;
   }
 };
 
-const deleteCharacter = async (id: string | number) => {
+const handleDeleteCharacter = async (id: string | number) => {
   if (confirm('Tem certeza que deseja banir este personagem de Westeros para sempre?')) {
     try {
-      await client.request(deleteItem('Personagens', id));
-      await fetchCharacters(); // Atualiza a lista após apagar
+      const result = await svcDeleteCharacter(id);
+      if (result.success) {
+        $q.notify({
+          type: 'positive',
+          message: 'Personagem removido!',
+          caption:
+            result.source === 'local'
+              ? 'Modo local — alteração temporária'
+              : 'Removido do Directus',
+          icon: result.source === 'local' ? 'cloud_off' : 'cloud_done',
+        });
+        // Atualização otimista: remove da lista imediatamente
+        characters.value = characters.value.filter(c => String(c.id) !== String(id));
+        await fetchCharacters();
+      } else {
+        $q.notify({ type: 'negative', message: 'Erro ao excluir personagem', icon: 'error' });
+      }
     } catch (error) {
       console.error('Erro ao apagar personagem:', error);
     }

@@ -1,8 +1,8 @@
 import type { CasaWesteros } from '../types/westeros';
 
 /**
- * Dados estáticos das Casas de Westeros.
- * Esses dados são exibidos quando o Directus não está disponível.
+ * Dados base das Casas de Westeros.
+ * Servem como fonte principal em modo local e como seed para o modo Directus.
  *
  * Para o campo Brasao: use o nome do arquivo em public/brasoes/ (ex: 'Stark.png')
  * Para o campo Icone: use o nome de um Material Icon (ex: 'shield', 'castle', 'flag')
@@ -135,8 +135,8 @@ export const staticHouses: CasaWesteros[] = [
   {
     id: 11,
     Nome: 'Manderly',
-    Lema: ' (lema ainda não mencionado) ',
-    Regiao: 'O Norte (Politicamente), Campina (Geograficamente)',
+    Lema: ' (sem lema oficial) ',
+    Regiao: ' Campina ',
     Cor: '#00ffc8ff',
     Cor2: '#ffffffff',
     Icone: 'shield',

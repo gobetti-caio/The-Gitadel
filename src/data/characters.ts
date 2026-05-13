@@ -1,8 +1,8 @@
 import type { Personagem } from '../types/westeros';
 
 /**
- * Dados estáticos dos Personagens de Westeros.
- * Esses dados são exibidos quando o Directus não está disponível.
+ * Dados base dos Personagens de Westeros.
+ * Servem como fonte principal em modo local e como seed para o modo Directus.
  *
  * Para o campo Icone: use o nome do arquivo em public/personagens/ (ex: 'jon_snow.png')
  * Casa_ID: deve corresponder ao id de uma casa em houses.ts
